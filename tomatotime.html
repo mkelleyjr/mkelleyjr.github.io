@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Tomato Timer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+            transition: background-color 0.3s;
+        }
+
+        body.dark-mode {
+            background-color: #1a1a1a;
+        }
+
+        body.dark-mode .timer-display {
+            color: #e74c3c;
+        }
+
+        body.dark-mode .time-input {
+            background-color: #2a2a2a;
+            color: #ffffff;
+            border-color: #c0392b;
+        }
+
+        body.dark-mode .title {
+            color: #e74c3c;
+        }
+
+        body.rose-pine {
+            background-color: #191724 !important;
+        }
+
+        body.rose-pine .timer-display {
+            color: #ebbcba;
+        }
+
+        body.rose-pine .time-input {
+            background-color: #1f1d2e;
+            color: #e0def4;
+            border-color: #ebbcba;
+        }
+
+        body.rose-pine button:not(:disabled) {
+            background-color: #ebbcba;
+            color: #191724;
+        }
+
+        body.rose-pine button:not(:disabled):hover {
+            background-color: #eb6f92;
+        }
+
+        body.rose-pine .theme-toggle {
+            color: #e0def4;
+        }
+
+        body.rose-pine .toggle-switch.active {
+            background-color: #ebbcba;
+        }
+
+        body.rose-pine .title {
+            color: #ebbcba;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .title {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #c0392b;
+        }
+
+        .tomato-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 30px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .time-input {
+            font-size: 18px;
+            padding: 10px;
+            width: 150px;
+            text-align: center;
+            border: 2px solid #c0392b;
+            border-radius: 5px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #c0392b;
+            color: white;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #a93226;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .theme-toggle {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        body.dark-mode .theme-toggle {
+            color: #ffffff;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background-color: #ccc;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .toggle-switch.active {
+            background-color: #c0392b;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(26px);
+        }
+
+        .timer-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #c0392b;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Tomato Timer</h1>
+        <div class="tomato-container">
+            <canvas id="tomatoCanvas" width="1000" height="1000"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="timer-display" id="timerDisplay">0:00</div>
+            <input type="text" id="timeInput" class="time-input" placeholder="Enter time (e.g., 5 or 5:00)">
+            <div class="buttons">
+                <button id="startBtn">Start</button>
+                <button id="pauseBtn" disabled>Pause</button>
+                <button id="resetBtn">Reset</button>
+            </div>
+            <div class="theme-toggle">
+                <span>Light Mode</span>
+                <div class="toggle-switch" id="themeToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+                <span>Dark Mode</span>
+            </div>
+            <div class="theme-toggle">
+                <span>Rose Pine</span>
+                <div class="toggle-switch" id="rosePineToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let totalSeconds = 0;
+        let remainingSeconds = 0;
+        let timerInterval = null;
+        let isPaused = false;
+
+        const timeInput = document.getElementById('timeInput');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const themeToggle = document.getElementById('themeToggle');
+        const rosePineToggle = document.getElementById('rosePineToggle');
+        const canvas = document.getElementById('tomatoCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let isRosePine = false;
+
+        // Pixel data for tomato - 1 = black pixel, 0 = transparent/fill area, 2 = green stem/leaf
+        function getTomatoPixelData() {
+            const data = [];
+            for (let y = 0; y < 60; y++) {
+                data[y] = new Array(50).fill(0);
+            }
+            
+            // Stem (center top) - GREEN
+            for (let y = 2; y <= 9; y++) {
+                for (let x = 23; x <= 26; x++) {
+                    data[y][x] = 2;
+                }
+            }
+            
+            // Left leaf - GREEN
+            for (let x = 10; x <= 22; x++) {
+                data[5][x] = 2;
+                data[6][x] = 2;
+            }
+            for (let y = 7; y <= 9; y++) {
+                data[y][10] = 2;
+                data[y][11] = 2;
+            }
+            for (let x = 12; x <= 16; x++) {
+                data[8][x] = 2;
+                data[9][x] = 2;
+            }
+            
+            // Right leaf - GREEN
+            for (let x = 27; x <= 39; x++) {
+                data[5][x] = 2;
+                data[6][x] = 2;
+            }
+            for (let y = 7; y <= 9; y++) {
+                data[y][38] = 2;
+                data[y][39] = 2;
+            }
+            for (let x = 33; x <= 37; x++) {
+                data[8][x] = 2;
+                data[9][x] = 2;
+            }
+            
+            // Top of tomato body - more rounded
+            for (let x = 18; x <= 31; x++) {
+                data[11][x] = 1;
+                data[12][x] = 1;
+            }
+            
+            // Upper sides - rounder
+            data[13][15] = 1; data[13][16] = 1; data[13][33] = 1; data[13][34] = 1;
+            data[14][15] = 1; data[14][16] = 1; data[14][33] = 1; data[14][34] = 1;
+            
+            data[15][13] = 1; data[15][14] = 1; data[15][35] = 1; data[15][36] = 1;
+            data[16][13] = 1; data[16][14] = 1; data[16][35] = 1; data[16][36] = 1;
+            
+            data[17][11] = 1; data[17][12] = 1; data[17][37] = 1; data[17][38] = 1;
+            data[18][11] = 1; data[18][12] = 1; data[18][37] = 1; data[18][38] = 1;
+            
+            data[19][10] = 1; data[19][11] = 1; data[19][38] = 1; data[19][39] = 1;
+            data[20][10] = 1; data[20][11] = 1; data[20][38] = 1; data[20][39] = 1;
+            
+            data[21][9] = 1; data[21][10] = 1; data[21][39] = 1; data[21][40] = 1;
+            data[22][9] = 1; data[22][10] = 1; data[22][39] = 1; data[22][40] = 1;
+            
+            data[23][8] = 1; data[23][9] = 1; data[23][40] = 1; data[23][41] = 1;
+            data[24][8] = 1; data[24][9] = 1; data[24][40] = 1; data[24][41] = 1;
+            
+            // Middle - widest part (fuller, rounder)
+            for (let y = 25; y <= 33; y++) {
+                data[y][7] = 1;
+                data[y][8] = 1;
+                data[y][41] = 1;
+                data[y][42] = 1;
+            }
+            
+            // Lower sides - rounder taper
+            data[34][8] = 1; data[34][9] = 1; data[34][40] = 1; data[34][41] = 1;
+            data[35][8] = 1; data[35][9] = 1; data[35][40] = 1; data[35][41] = 1;
+            
+            data[36][9] = 1; data[36][10] = 1; data[36][39] = 1; data[36][40] = 1; data[36][41] = 1;
+            data[37][9] = 1; data[37][10] = 1; data[37][39] = 1; data[37][40] = 1; data[37][41] = 1;
+            
+            data[38][10] = 1; data[38][11] = 1; data[38][38] = 1; data[38][39] = 1; data[38][40] = 1;
+            data[39][10] = 1; data[39][11] = 1; data[39][38] = 1; data[39][39] = 1; data[39][40] = 1;
+            
+            data[40][11] = 1; data[40][12] = 1; data[40][37] = 1; data[40][38] = 1; data[40][39] = 1;
+            data[41][11] = 1; data[41][12] = 1; data[41][37] = 1; data[41][38] = 1; data[41][39] = 1;
+            
+            data[42][12] = 1; data[42][13] = 1; data[42][36] = 1; data[42][37] = 1;
+            data[43][12] = 1; data[43][13] = 1; data[43][36] = 1; data[43][37] = 1;
+            
+            data[44][13] = 1; data[44][14] = 1; data[44][35] = 1; data[44][36] = 1;
+            data[45][13] = 1; data[45][14] = 1; data[45][35] = 1; data[45][36] = 1;
+            
+            data[46][14] = 1; data[46][15] = 1; data[46][34] = 1; data[46][35] = 1;
+            data[47][14] = 1; data[47][15] = 1; data[47][34] = 1; data[47][35] = 1;
+            
+            data[48][15] = 1; data[48][16] = 1; data[48][33] = 1; data[48][34] = 1;
+            data[49][15] = 1; data[49][16] = 1; data[49][33] = 1; data[49][34] = 1;
+            
+            data[50][16] = 1; data[50][17] = 1; data[50][32] = 1; data[50][33] = 1;
+            data[51][16] = 1; data[51][17] = 1; data[51][32] = 1; data[51][33] = 1;
+            
+            // Bottom - rounder and complete
+            for (let x = 18; x <= 31; x++) {
+                data[52][x] = 1;
+                data[53][x] = 1;
+                data[54][x] = 1;
+            }
+            
+            return data;
+        }
+
+        const tomatoPixelData = getTomatoPixelData();
+
+        function drawTomato() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const pixelSize = canvas.width / 50;
+            const heightScale = canvas.height / 60;
+            
+            // First, draw the red fill based on timer, but only inside the tomato shape
+            if (totalSeconds > 0 && remainingSeconds > 0) {
+                const fillPercentage = remainingSeconds / totalSeconds;
+                const fillHeight = 60 * fillPercentage;
+                const fillStartY = 60 - fillHeight;
+                
+                ctx.fillStyle = '#ff8c00';
+                for (let y = Math.floor(fillStartY); y < 60; y++) {
+                    for (let x = 0; x < 50; x++) {
+                        if (tomatoPixelData[y][x] === 0) {
+                            if (y >= 11) {
+                                let leftEdge = -1, rightEdge = -1;
+                                for (let checkX = 0; checkX < 50; checkX++) {
+                                    if (tomatoPixelData[y][checkX] === 1) {
+                                        if (leftEdge === -1) leftEdge = checkX;
+                                        rightEdge = checkX;
+                                    }
+                                }
+                                if (x > leftEdge && x < rightEdge) {
+                                    ctx.fillRect(x * pixelSize, y * heightScale, pixelSize, heightScale);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Draw green stem and leaves
+            ctx.fillStyle = '#2ecc71';
+            for (let y = 0; y < 60; y++) {
+                for (let x = 0; x < 50; x++) {
+                    if (tomatoPixelData[y][x] === 2) {
+                        ctx.fillRect(x * pixelSize, y * heightScale, pixelSize, heightScale);
+                    }
+                }
+            }
+            
+            // Draw black outline pixels on top
+            ctx.fillStyle = '#000000';
+            for (let y = 0; y < 60; y++) {
+                for (let x = 0; x < 50; x++) {
+                    if (tomatoPixelData[y][x] === 1) {
+                        ctx.fillRect(x * pixelSize, y * heightScale, pixelSize, heightScale);
+                    }
+                }
+            }
+        }
+
+        function parseTimeInput(input) {
+            input = input.trim();
+            if (input.includes(':')) {
+                const parts = input.split(':');
+                const minutes = parseInt(parts[0]) || 0;
+                const seconds = parseInt(parts[1]) || 0;
+                return minutes * 60 + seconds;
+            } else {
+                const minutes = parseInt(input) || 0;
+                return minutes * 60;
+            }
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateDisplay() {
+            timerDisplay.textContent = formatTime(remainingSeconds);
+            drawTomato();
+        }
+
+        function startTimer() {
+            if (timerInterval) return;
+
+            const inputValue = timeInput.value;
+            if (!inputValue) {
+                alert('Please enter a time');
+                return;
+            }
+
+            if (!isPaused) {
+                totalSeconds = parseTimeInput(inputValue);
+                remainingSeconds = totalSeconds;
+                
+                if (totalSeconds <= 0) {
+                    alert('Please enter a valid time greater than 0');
+                    return;
+                }
+            }
+
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            timeInput.disabled = true;
+
+            timerInterval = setInterval(() => {
+                remainingSeconds--;
+                updateDisplay();
+
+                if (remainingSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    startBtn.disabled = false;
+                    pauseBtn.disabled = true;
+                    timeInput.disabled = false;
+                    isPaused = false;
+                    alert('Time is up!');
+                }
+            }, 1000);
+
+            updateDisplay();
+        }
+
+        function pauseTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                isPaused = true;
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                startBtn.textContent = 'Resume';
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            isPaused = false;
+            totalSeconds = 0;
+            remainingSeconds = 0;
+            
+            timeInput.value = '';
+            timeInput.disabled = false;
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start';
+            pauseBtn.disabled = true;
+            
+            timerDisplay.textContent = '0:00';
+            drawTomato();
+        }
+
+        function toggleTheme() {
+            if (!isRosePine) {
+                document.body.classList.toggle('dark-mode');
+                themeToggle.classList.toggle('active');
+            }
+        }
+
+        function toggleRosePine() {
+            isRosePine = !isRosePine;
+            rosePineToggle.classList.toggle('active');
+            
+            if (isRosePine) {
+                document.body.classList.remove('dark-mode');
+                document.body.classList.add('rose-pine');
+            } else {
+                document.body.classList.remove('rose-pine');
+                if (themeToggle.classList.contains('active')) {
+                    document.body.classList.add('dark-mode');
+                }
+            }
+        }
+
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        themeToggle.addEventListener('click', toggleTheme);
+        rosePineToggle.addEventListener('click', toggleRosePine);
+        
+        // Allow Enter key to start timer
+        timeInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                startTimer();
+            }
+        });
+
+        // Initial draw
+        drawTomato();
+    </script>
+</body>
+</html>
