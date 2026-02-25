@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stuff I Use - Michael</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #4e5166 0%, #7c90a0 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 60px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #7c90a0;
+            text-decoration: none;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: #4e5166;
+        }
+
+        h1 {
+            color: #4e5166;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .intro {
+            color: #747274;
+            text-align: center;
+            margin-bottom: 50px;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .category {
+            margin-bottom: 40px;
+        }
+
+        .category h2 {
+            color: #4e5166;
+            font-size: 1.6em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #b5aa9d;
+        }
+
+        .item {
+            background: linear-gradient(135deg, #b5aa9d 0%, #b9b7a7 100%);
+            padding: 20px 25px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(78, 81, 102, 0.2);
+            border-color: #7c90a0;
+        }
+
+        .item-name {
+            color: #4e5166;
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .item-description {
+            color: #747274;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 40px 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="about.html" class="back-link">← Back to About Me</a>
+        
+        <h1>🛠️ Stuff I Use</h1>
+        <p class="intro">
+            Tools, software, and gear that I use and recommend. 
+            These are things that have genuinely made my workflow better.
+        </p>
+
+        <div class="category">
+            <h2>Software & Tools</h2>
+            
+            <div class="item">
+                <div class="item-name">VS Code</div>
+                <div class="item-description">
+                    My go-to code editor. Fast, customizable, and has excellent extensions.
+                </div>
+            </div>
+
+            <div class="item">
+                <div class="item-name">GitHub</div>
+                <div class="item-description">
+                    Essential for version control and hosting my projects.
+                </div>
+            </div>
+
+            <div class="item">
+                <div class="item-name">Tool Name</div>
+                <div class="item-description">
+                    Add your own tools and why you like them here.
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>Hardware & Gear</h2>
+            
+            <div class="item">
+                <div class="item-name">MacBook Pro</div>
+                <div class="item-description">
+                    Reliable and powerful laptop for development work.
+                </div>
+            </div>
+
+            <div class="item">
+                <div class="item-name">Item Name</div>
+                <div class="item-description">
+                    Add your favorite hardware items here.
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>Services</h2>
+            
+            <div class="item">
+                <div class="item-name">Service Name</div>
+                <div class="item-description">
+                    Add services you use and recommend.
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

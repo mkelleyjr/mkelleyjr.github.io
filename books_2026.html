@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 Books - Your Name</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #4e5166 0%, #7c90a0 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 60px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #7c90a0;
+            text-decoration: none;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: #4e5166;
+        }
+
+        h1 {
+            color: #4e5166;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .year-subtitle {
+            color: #7c90a0;
+            text-align: center;
+            margin-bottom: 50px;
+            font-size: 1.1em;
+        }
+
+        .books-grid {
+            display: grid;
+            gap: 25px;
+        }
+
+        .book-card {
+            background: linear-gradient(135deg, #b5aa9d 0%, #b9b7a7 100%);
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .book-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(78, 81, 102, 0.2);
+            border-color: #7c90a0;
+        }
+
+        .book-title {
+            color: #4e5166;
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .book-author {
+            color: #7c90a0;
+            font-size: 1em;
+            margin-bottom: 15px;
+        }
+
+        .book-notes {
+            color: #747274;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        .book-date {
+            color: #7c90a0;
+            font-size: 0.85em;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 40px 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="books.html" class="back-link">← Back to Books</a>
+        
+        <h1>📚 Michael's 2026 Reading List</h1>
+        <p class="year-subtitle">Books I've read this year</p>
+
+        <div class="books-grid">
+            <div class="book-card">
+                <div class="book-title">Book Title Here</div>
+                <div class="book-author">by Author Name</div>
+                <div class="book-notes">
+                    Add your thoughts, notes, or a brief summary about this book. 
+                    What did you learn? What did you enjoy? Would you recommend it?
+                </div>
+                <div class="book-date">Finished: January 2026</div>
+            </div>
+
+            <div class="book-card">
+                <div class="book-title">Another Book Title</div>
+                <div class="book-author">by Another Author</div>
+                <div class="book-notes">
+                    Your notes and thoughts about this book go here.
+                </div>
+                <div class="book-date">Finished: February 2026</div>
+            </div>
+
+            <!-- Add more books as you read them -->
+        </div>
+    </div>
+</body>
+</html>
