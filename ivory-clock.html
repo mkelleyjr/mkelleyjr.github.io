@@ -1,0 +1,1171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Ivory Clock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>html,body{margin:0}img{max-width:100%}</style>
+<style>
+  /* ---------- tokens: light (system default + explicit light) ---------- */
+  :root{
+    --bg:        #ded4bc;
+    --bg-2:      #e9e1cd;
+    --panel:     #ece4d1;
+    --line:      #c6b892;
+    --text:      #2a2620;
+    --text-dim:  #6d6450;
+    --accent:    #997231;   /* brass */
+    --accent-hi: #b58f4a;
+    --alert:     #7c3030;   /* oxblood */
+    --steel:     #2c3e70;   /* blued steel */
+    --shadow:    rgba(42,34,20,.22);
+    --field-focus: rgba(181,143,74,.55);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:        #171511;
+      --bg-2:      #201d18;
+      --panel:     #232019;
+      --line:      #3b3529;
+      --text:      #ece2cd;
+      --text-dim:  #9a9078;
+      --accent:    #c19a55;
+      --accent-hi: #dab470;
+      --alert:     #c86f5c;
+      --steel:     #7a8dc4;
+      --shadow:    rgba(0,0,0,.55);
+      --field-focus: rgba(218,180,112,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:        #171511;
+    --bg-2:      #201d18;
+    --panel:     #232019;
+    --line:      #3b3529;
+    --text:      #ece2cd;
+    --text-dim:  #9a9078;
+    --accent:    #c19a55;
+    --accent-hi: #dab470;
+    --alert:     #c86f5c;
+    --steel:     #7a8dc4;
+    --shadow:    rgba(0,0,0,.55);
+    --field-focus: rgba(218,180,112,.5);
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin: 0;
+    min-height: 100%;
+    background:
+      radial-gradient(130% 110% at 50% -10%, var(--bg-2), var(--bg) 68%);
+    color: var(--text);
+    font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap{
+    max-width: 640px;
+    margin: 0 auto;
+    padding: clamp(1.4rem, 5vw, 3rem) 1rem 3.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(1.1rem, 3.6vw, 1.9rem);
+  }
+
+  .eyebrow{
+    font-size: .72rem;
+    font-weight: 500;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 0;
+  }
+
+  h1.sr{
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+
+  /* ---------- dial ---------- */
+  .dialwrap{
+    position: relative;
+    width: min(86vw, 500px);
+    aspect-ratio: 1 / 1;
+    filter: drop-shadow(0 14px 30px var(--shadow));
+  }
+  .dialwrap canvas{
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+  }
+
+  /* ---------- mode switch ---------- */
+  .modeswitch{
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 1.02rem;
+  }
+  .ms-label{
+    color: var(--text-dim);
+    transition: color .2s ease;
+    letter-spacing: .01em;
+  }
+  .modeswitch[data-mode="clock"] .ms-label[data-side="left"],
+  .modeswitch[data-mode="intervals"] .ms-label[data-side="right"]{
+    color: var(--text);
+  }
+  .ms-track{
+    appearance: none;
+    border: 1px solid var(--line);
+    background: var(--bg-2);
+    width: 62px; height: 30px;
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    padding: 0;
+    transition: background .22s ease, border-color .22s ease;
+    box-shadow: inset 0 2px 5px var(--shadow);
+  }
+  .ms-track[aria-checked="true"]{
+    background: linear-gradient(180deg, var(--accent-hi), var(--accent));
+    border-color: rgba(0,0,0,.28);
+  }
+  .ms-knob{
+    position: absolute;
+    top: 50%; left: 4px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #fbf7ec, #d8cdb0);
+    box-shadow: 0 1px 3px rgba(0,0,0,.4);
+    transform: translateY(-50%);
+    transition: left .22s cubic-bezier(.4,.1,.2,1);
+  }
+  .ms-track[aria-checked="true"] .ms-knob{ left: 36px; }
+
+  /* ---------- deck ---------- */
+  .deck{
+    width: min(86vw, 500px);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 2px 4px var(--shadow);
+    padding: clamp(1rem, 3.5vw, 1.5rem);
+  }
+  .panel{ display: none; flex-direction: column; gap: 1.1rem; }
+  .panel.on{ display: flex; }
+
+  .readout-row{
+    display: flex;
+    justify-content: center;
+    gap: clamp(1.2rem, 6vw, 2.6rem);
+    text-align: center;
+  }
+  .readout .num{
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(1.9rem, 7.5vw, 2.7rem);
+    line-height: 1;
+    color: var(--text);
+  }
+  .readout .cap{
+    display: block;
+    margin-top: .5rem;
+    font-size: .66rem;
+    letter-spacing: .24em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .readout.alert .num{ color: var(--alert); }
+
+  .subline{
+    text-align: center;
+    font-size: .8rem;
+    letter-spacing: .06em;
+    color: var(--text-dim);
+    min-height: 1.2em;
+  }
+  .subline.strong{ color: var(--text); font-weight: 500; }
+
+  /* progress bar */
+  .bar{
+    height: 6px;
+    background: var(--bg-2);
+    border-radius: 999px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px var(--shadow);
+  }
+  .bar > i{
+    display: block; height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-hi));
+    border-radius: 999px;
+    transition: width .25s linear;
+  }
+
+  /* config form */
+  form#cfg{ display: contents; }
+  .fields{
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .field{ flex: 1 1 130px; display: flex; flex-direction: column; gap: .4rem; }
+  .field label{
+    font-size: .66rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .field input{
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 1.15rem;
+    color: var(--text);
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: .55em .65em;
+    width: 100%;
+  }
+  .field .hint{ font-size: .68rem; color: var(--text-dim); letter-spacing: .02em; }
+
+  .cfg-error{
+    color: var(--alert);
+    font-size: .78rem;
+    min-height: 1em;
+  }
+
+  .btn-row{ display: flex; gap: .7rem; flex-wrap: wrap; }
+  button.act{
+    appearance: none;
+    font: inherit;
+    font-weight: 600;
+    letter-spacing: .04em;
+    padding: .7em 1.4em;
+    border-radius: 3px;
+    cursor: pointer;
+    flex: 1 1 auto;
+  }
+  button.primary{
+    background: linear-gradient(180deg, var(--accent-hi), var(--accent));
+    color: #1c1710;
+    border: 1px solid rgba(0,0,0,.28);
+    box-shadow: 0 1px 2px var(--shadow);
+  }
+  button.primary:disabled{ opacity: .45; cursor: not-allowed; }
+  button.ghost{
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--line);
+  }
+  button.ghost:hover{ border-color: var(--accent); }
+
+  .util-row{
+    display: flex;
+    justify-content: center;
+    gap: .5rem;
+    margin-top: .2rem;
+  }
+  button.util{
+    appearance: none;
+    font: inherit;
+    font-size: .7rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: .35em .8em;
+    cursor: pointer;
+  }
+  button.util[aria-pressed="true"]{
+    color: var(--text);
+    border-color: var(--line);
+    background: var(--bg-2);
+  }
+
+  .alarm-row{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-top: -.35rem;
+  }
+  .alarm-input{
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .82rem;
+    color: var(--text);
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: .4em .55em;
+    width: 6.4em;
+    text-align: center;
+  }
+  .alarm-input:focus-visible{
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--field-focus);
+  }
+  .alarm-status{
+    margin: .2rem 0 0;
+    text-align: center;
+    font-size: .66rem;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    min-height: 1em;
+  }
+  .alarm-status.err{ color: var(--alert); letter-spacing: .04em; text-transform: none; }
+  .alarm-status.ring{ color: var(--alert); }
+  .alarm-dismiss{ display: none; }
+  .alarm-dismiss.show{ display: block; }
+
+  .hintline{
+    text-align: center;
+    font-size: .74rem;
+    color: var(--text-dim);
+    letter-spacing: .03em;
+    max-width: 36ch;
+    line-height: 1.5;
+  }
+
+  .about{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .6rem;
+    margin-top: -.4rem;
+  }
+  .about-btn{
+    appearance: none;
+    font: inherit;
+    font-size: .68rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: .35em .9em;
+    cursor: pointer;
+    transition: color .2s ease, border-color .2s ease;
+  }
+  .about-btn:hover{ color: var(--text); border-color: var(--accent); }
+  .about-msg{
+    display: none;
+    margin: 0;
+    text-align: center;
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-size: .92rem;
+    color: var(--text);
+  }
+  .about-msg.show{ display: block; }
+
+  :focus-visible{
+    outline: 2px solid var(--accent-hi);
+    outline-offset: 2px;
+  }
+  .ms-track:focus-visible{ outline-offset: 3px; }
+  .field input:focus-visible{
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--field-focus);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      transition-duration: .01ms !important;
+      animation-duration: .01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="sr">Ivory Clock</h1>
+  <p class="eyebrow">Ivory Clock</p>
+
+  <div class="dialwrap">
+    <canvas id="dial" aria-hidden="true"></canvas>
+  </div>
+
+  <div class="modeswitch" data-mode="clock">
+    <span class="ms-label" data-side="left">Clock</span>
+    <button type="button" class="ms-track" id="modeSwitch" role="switch"
+            aria-checked="false" aria-label="Switch between Clock mode and Intervals mode">
+      <span class="ms-knob"></span>
+    </button>
+    <span class="ms-label" data-side="right">Intervals</span>
+  </div>
+
+  <div class="deck">
+
+    <!-- CLOCK MODE -->
+    <div class="panel on" id="panel-clock">
+      <div class="readout-row">
+        <div class="readout">
+          <span class="num" id="clk-time">--:--:--</span>
+          <span class="cap" id="clk-date"></span>
+        </div>
+      </div>
+      <div class="util-row">
+        <button type="button" class="util" id="fmt12" aria-pressed="true">12h</button>
+        <button type="button" class="util" id="fmt24" aria-pressed="false">24h</button>
+      </div>
+      <div class="alarm-row">
+        <input id="inAlarm" type="text" inputmode="numeric" autocomplete="off"
+               placeholder="7:30 AM" aria-label="Alarm time" class="alarm-input">
+        <button type="button" class="util" id="alarmBtn" aria-pressed="false">Set alarm</button>
+      </div>
+      <p class="alarm-status" id="alarmStatus" role="status"></p>
+      <button type="button" class="act ghost alarm-dismiss" id="alarmDismiss">Dismiss alarm</button>
+    </div>
+
+    <!-- INTERVALS - CONFIG -->
+    <div class="panel" id="panel-config">
+      <form id="cfg">
+        <div class="fields">
+          <div class="field">
+            <label for="inLen">Round length</label>
+            <input id="inLen" type="text" inputmode="numeric" autocomplete="off"
+                   value="5:00" aria-describedby="lenHint">
+            <span class="hint" id="lenHint">M:SS &middot; 5s to 99:00</span>
+          </div>
+          <div class="field">
+            <label for="inRounds">Rounds</label>
+            <input id="inRounds" type="number" min="1" max="99" step="1" value="8"
+                   inputmode="numeric" autocomplete="off">
+            <span class="hint" id="totalHint">Total 40:00</span>
+          </div>
+        </div>
+        <p class="cfg-error" id="cfgError" role="alert"></p>
+        <div class="btn-row">
+          <button type="submit" class="act primary" id="startBtn">Start session</button>
+        </div>
+      </form>
+      <div class="util-row">
+        <button type="button" class="util" id="muteBtn" aria-pressed="false"
+                aria-label="Mute the round-change beep">Sound on</button>
+      </div>
+    </div>
+
+    <!-- INTERVALS - RUNNING -->
+    <div class="panel" id="panel-run">
+      <p class="subline strong" id="runRound">Round 1 of 8</p>
+      <div class="readout-row">
+        <div class="readout" id="roElapsedBox">
+          <span class="num" id="roElapsed">00:00</span>
+          <span class="cap">Elapsed</span>
+        </div>
+        <div class="readout" id="roRemainBox">
+          <span class="num" id="roRemain">05:00</span>
+          <span class="cap">To switch</span>
+        </div>
+      </div>
+      <div class="bar"><i id="roBar"></i></div>
+      <p class="subline" id="runStatus"></p>
+      <div class="btn-row">
+        <button type="button" class="act ghost" id="pauseBtn">Pause</button>
+        <button type="button" class="act ghost" id="resetBtn">Reset</button>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="hintline" id="hintline">The dial tracks the current time.</p>
+
+  <div class="about">
+    <button type="button" class="about-btn" id="aboutBtn" aria-expanded="false" aria-controls="aboutMsg">About</button>
+    <p class="about-msg" id="aboutMsg">Made with care by Michael L. Kelley Jr.</p>
+  </div>
+
+  <div aria-live="assertive" class="h1 sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);" id="live"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var SWITCH_MS = 3000;
+  var DOT = String.fromCharCode(183);   /* middle dot, ASCII-safe source */
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- element refs ---------- */
+  var $ = function(id){ return document.getElementById(id); };
+  var canvas = $("dial"), ctx = canvas.getContext("2d");
+  var dialwrap = document.querySelector(".dialwrap");
+  var modeSwitch = $("modeSwitch"), modeSwitchUI = document.querySelector(".modeswitch");
+  var live = $("live"), hintline = $("hintline");
+
+  var panelClock = $("panel-clock"), panelConfig = $("panel-config"), panelRun = $("panel-run");
+  var clkTime = $("clk-time"), clkDate = $("clk-date");
+  var fmt12 = $("fmt12"), fmt24 = $("fmt24");
+
+  var cfg = $("cfg"), inLen = $("inLen"), inRounds = $("inRounds");
+  var cfgError = $("cfgError"), startBtn = $("startBtn"), totalHint = $("totalHint");
+  var muteBtn = $("muteBtn");
+  var inAlarm = $("inAlarm"), alarmBtn = $("alarmBtn"), alarmStatus = $("alarmStatus"), alarmDismiss = $("alarmDismiss");
+
+  var runRound = $("runRound"), roElapsed = $("roElapsed"), roRemain = $("roRemain");
+  var roRemainBox = $("roRemainBox"), roBar = $("roBar"), runStatus = $("runStatus");
+  var pauseBtn = $("pauseBtn"), resetBtn = $("resetBtn");
+
+  /* ---------- persisted settings ---------- */
+  var S = { mode:"clock", len:"5:00", rounds:8, h24:false, muted:false, alarm:"", alarmOn:false };
+  try{
+    var raw = localStorage.getItem("ivory-clock-v1");
+    if(raw){ var p = JSON.parse(raw); if(p && typeof p === "object"){
+      if(p.mode==="clock"||p.mode==="intervals") S.mode = p.mode;
+      if(typeof p.len==="string") S.len = p.len;
+      if(typeof p.rounds==="number") S.rounds = p.rounds;
+      if(typeof p.alarm==="string") S.alarm = p.alarm;
+      S.h24 = !!p.h24; S.muted = !!p.muted; S.alarmOn = !!p.alarmOn;
+    }}
+  }catch(e){}
+  function save(){
+    try{ localStorage.setItem("ivory-clock-v1", JSON.stringify(S)); }catch(e){}
+  }
+
+  /* ---------- run state ---------- */
+  var run = { status:"idle", round:1, rounds:8, roundMs:300000,
+              startPerf:0, pauseAt:0, cd:0 };
+
+  /* ---------- audio ---------- */
+  var actx = null;
+  function ensureAudio(){
+    try{
+      if(!actx){ var AC = window.AudioContext || window.webkitAudioContext; if(!AC) return; actx = new AC(); }
+      if(actx.state === "suspended") actx.resume();
+    }catch(e){}
+  }
+  function tone(freq, delay, dur, peak){
+    if(!actx) return;
+    var t = actx.currentTime + delay;
+    var o = actx.createOscillator(), g = actx.createGain();
+    o.type = "sine"; o.frequency.value = freq;
+    o.connect(g); g.connect(actx.destination);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak || 0.28, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+  function beepSwitch(){ if(S.muted) return; ensureAudio(); tone(740,0,0.16,0.3); tone(988,0.15,0.3,0.26); }
+  function beepDone(){ if(S.muted) return; ensureAudio(); tone(523,0,0.18,0.26); tone(659,0.2,0.18,0.26); tone(784,0.4,0.55,0.3); }
+
+  function announce(msg){ live.textContent = ""; setTimeout(function(){ live.textContent = msg; }, 30); }
+
+  /* ---------- formatting ---------- */
+  function fmt(sec){
+    sec = Math.max(0, Math.floor(sec));
+    var m = Math.floor(sec/60), s = sec % 60;
+    return (m<10?"0":"")+m + ":" + (s<10?"0":"")+s;
+  }
+  function fmtTotal(sec){
+    sec = Math.round(sec);
+    var h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec % 60;
+    var mm = (m<10 && h ? "0":"") + m;
+    return (h ? h + ":" : "") + mm + ":" + (s<10?"0":"") + s;
+  }
+  function parseLen(v){
+    v = (v || "").trim();
+    if(!v) return null;
+    var sec;
+    if(v.indexOf(":") !== -1){
+      var pp = v.split(":");
+      if(pp.length !== 2) return null;
+      var m = parseInt(pp[0],10), s = parseInt(pp[1],10);
+      if(isNaN(m) || isNaN(s) || s < 0 || s > 59 || m < 0) return null;
+      sec = m*60 + s;
+    } else {
+      var n = parseFloat(v);
+      if(isNaN(n)) return null;
+      sec = Math.round(n*60);
+    }
+    if(sec < 5 || sec > 99*60) return null;
+    return sec;
+  }
+  function parseRounds(v){
+    var n = parseInt(v,10);
+    if(isNaN(n) || n < 1 || n > 99) return null;
+    return n;
+  }
+  /* alarm time -> minutes since midnight, or null. Accepts "7:30", "7:30am", "19:30". */
+  function parseAlarm(v){
+    v = (v || "").trim().toLowerCase().replace(/\s+/g, "");
+    if(!v) return null;
+    var mm = v.match(/^(\d{1,2}):(\d{2})(am|pm)?$/);
+    if(!mm) return null;
+    var h = parseInt(mm[1],10), min = parseInt(mm[2],10), ap = mm[3];
+    if(isNaN(h) || isNaN(min) || min > 59) return null;
+    if(ap){
+      if(h < 1 || h > 12) return null;
+      if(ap === "am") h = (h === 12) ? 0 : h;
+      else h = (h === 12) ? 12 : h + 12;
+    } else if(h > 23) return null;
+    return h * 60 + min;
+  }
+  function fmtClockTime(mins){
+    var h = Math.floor(mins/60), m = mins % 60;
+    if(S.h24) return (h<10?"0":"")+h + ":" + (m<10?"0":"")+m;
+    var ap = h >= 12 ? "PM" : "AM", hh = h % 12; if(hh === 0) hh = 12;
+    return hh + ":" + (m<10?"0":"")+m + " " + ap;
+  }
+  function nextOccurrence(mins){
+    var now = new Date();
+    var t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), Math.floor(mins/60), mins % 60, 0, 0);
+    if(t.getTime() <= now.getTime()) t.setDate(t.getDate() + 1);
+    return t.getTime();
+  }
+
+  var alarm = { armed:false, mins:0, targetTs:0, ringing:false, nextChime:0, ringUntil:0 };
+
+  /* ---------- canvas sizing ---------- */
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var W = 300, H = 300;
+  function resize(){
+    var r = dialwrap.getBoundingClientRect();
+    W = Math.max(200, r.width); H = Math.max(200, r.height);
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw(performance.now());
+  }
+  if(window.ResizeObserver){ new ResizeObserver(resize).observe(dialwrap); }
+  else { window.addEventListener("resize", resize); }
+
+  /* ---------- dial palette (a physical ivory instrument - fixed in both themes) ---------- */
+  var C = {
+    bezelDark:  "#5f4620",
+    bezelLight: "#dcbb78",
+    ring:       "rgba(22,16,6,.55)",
+    dialHi:     "#fbf7ec",
+    dialMid:    "#efe9d8",
+    dialEdge:   "#e3d8be",
+    vignette:   "rgba(120,98,58,.16)",
+    sepia:      "#2d2418",
+    sepiaSoft:  "#6b5a3a",
+    brass:      "#9a7331",
+    brassSoft:  "rgba(154,115,49,.16)",
+    steel:      "#2b3f70",
+    steelHi:    "#5f78b4",
+    oxblood:    "#7c3030",
+    alertWash:  "rgba(124,48,48,.15)"
+  };
+  var ROMAN = ["I","II","III","IIII","V","VI","VII","VIII","IX","X","XI","XII"];
+
+  function hand(cx, cy, ang, len, tail, width, color, hiColor){
+    var sx = cx - Math.sin(ang) * tail, sy = cy + Math.cos(ang) * tail;
+    var ex = cx + Math.sin(ang) * len, ey = cy - Math.cos(ang) * len;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = color; ctx.lineWidth = width;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+    if(hiColor){
+      ctx.strokeStyle = hiColor; ctx.lineWidth = Math.max(1, width * 0.32);
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey); ctx.stroke();
+    }
+  }
+
+  function draw(now){
+    var w = W, h = H, cx = w/2, cy = h/2;
+    var R = Math.min(w, h)/2 - 4;
+    ctx.clearRect(0, 0, w, h);
+
+    /* bezel */
+    var bg = ctx.createRadialGradient(cx, cy, R*0.88, cx, cy, R*1.0);
+    bg.addColorStop(0, C.bezelDark);
+    bg.addColorStop(0.5, C.bezelLight);
+    bg.addColorStop(1, C.bezelDark);
+    ctx.strokeStyle = bg; ctx.lineWidth = R*0.09;
+    ctx.beginPath(); ctx.arc(cx, cy, R*0.955, 0, Math.PI*2); ctx.stroke();
+
+    ctx.strokeStyle = C.ring; ctx.lineWidth = Math.max(1, R*0.012);
+    ctx.beginPath(); ctx.arc(cx, cy, R*0.905, 0, Math.PI*2); ctx.stroke();
+
+    /* dial face */
+    var dg = ctx.createRadialGradient(cx - R*0.2, cy - R*0.24, R*0.08, cx, cy, R*0.94);
+    dg.addColorStop(0, C.dialHi);
+    dg.addColorStop(0.62, C.dialMid);
+    dg.addColorStop(1, C.dialEdge);
+    ctx.fillStyle = dg;
+    ctx.beginPath(); ctx.arc(cx, cy, R*0.9, 0, Math.PI*2); ctx.fill();
+
+    ctx.strokeStyle = C.vignette; ctx.lineWidth = R*0.02;
+    ctx.beginPath(); ctx.arc(cx, cy, R*0.85, 0, Math.PI*2); ctx.stroke();
+
+    var intervals = (S.mode === "intervals");
+
+    /* current elapsed for intervals */
+    var el = 0;
+    if(intervals){
+      if(run.status === "running") el = now - run.startPerf;
+      else if(run.status === "paused") el = run.pauseAt - run.startPerf;
+      else if(run.status === "switching" || run.status === "done") el = run.roundMs;
+      if(el < 0) el = 0; if(el > run.roundMs) el = run.roundMs;
+    }
+    var frac = intervals && run.roundMs ? el / run.roundMs : 0;
+
+    /* ticks */
+    for(var i = 0; i < 60; i++){
+      var a = i * Math.PI/30;
+      var major = (i % 5 === 0);
+      var outer = R*0.845;
+      var inner = outer - (major ? R*0.072 : R*0.036);
+      ctx.strokeStyle = major ? C.sepia : (intervals ? "rgba(45,36,24,.5)" : "rgba(45,36,24,.42)");
+      ctx.lineWidth = major ? R*0.014 : R*0.006;
+      ctx.lineCap = "butt";
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.sin(a)*inner, cy - Math.cos(a)*inner);
+      ctx.lineTo(cx + Math.sin(a)*outer, cy - Math.cos(a)*outer);
+      ctx.stroke();
+    }
+
+    /* progress track + arc (intervals only) */
+    if(intervals){
+      ctx.lineCap = "round";
+      ctx.strokeStyle = C.brassSoft; ctx.lineWidth = R*0.022;
+      ctx.beginPath(); ctx.arc(cx, cy, R*0.845, 0, Math.PI*2); ctx.stroke();
+      if(frac > 0){
+        ctx.strokeStyle = C.brass; ctx.lineWidth = R*0.022;
+        ctx.beginPath();
+        ctx.arc(cx, cy, R*0.845, -Math.PI/2, -Math.PI/2 + Math.PI*2*frac);
+        ctx.stroke();
+      }
+    }
+
+    /* numerals */
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = intervals ? "rgba(45,36,24,.32)" : C.sepia;
+    ctx.font = "600 " + (R*0.12) + "px Fraunces, Georgia, serif";
+    for(var n = 1; n <= 12; n++){
+      var na = n * Math.PI/6;
+      var nr = R*0.72;
+      ctx.fillText(ROMAN[n-1], cx + Math.sin(na)*nr, cy - Math.cos(na)*nr + R*0.01);
+    }
+
+    /* engraved wordmark */
+    ctx.fillStyle = "rgba(255,251,240,.5)";
+    ctx.font = "italic 600 " + (R*0.135) + "px Fraunces, Georgia, serif";
+    ctx.fillText("Ivory", cx, cy - R*0.32 + 1);
+    ctx.fillStyle = C.sepia;
+    ctx.fillText("Ivory", cx, cy - R*0.32);
+    ctx.fillStyle = C.sepiaSoft;
+    ctx.font = "600 " + (R*0.05) + "px 'IBM Plex Sans', sans-serif";
+    if("letterSpacing" in ctx) ctx.letterSpacing = (R*0.03) + "px";
+    ctx.fillText("CLOCK", cx, cy - R*0.19);
+    if("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+
+    /* lower sub-label */
+    ctx.fillStyle = C.sepiaSoft;
+    ctx.font = "500 " + (R*0.052) + "px 'IBM Plex Sans', sans-serif";
+    if("letterSpacing" in ctx) ctx.letterSpacing = (R*0.02) + "px";
+    if(intervals){
+      ctx.fillText("ROUND " + Math.min(run.round, run.rounds) + " / " + run.rounds, cx, cy + R*0.26);
+    } else {
+      var d = new Date();
+      ctx.fillText(d.toLocaleDateString(undefined, {weekday:"short", day:"numeric", month:"short"}).toUpperCase(), cx, cy + R*0.26);
+    }
+    if("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+
+    /* hands */
+    var d2 = new Date();
+    if(intervals){
+      var secs = el / 1000;
+      var sweepA = (secs % 60) / 60 * Math.PI*2;
+      var roundA = frac * Math.PI*2;
+      hand(cx, cy, roundA, R*0.6, R*0.14, R*0.024, C.steel, C.steelHi);
+      hand(cx, cy, sweepA, R*0.8, R*0.19, R*0.009, C.steel, null);
+      /* sweep tip */
+      ctx.fillStyle = C.oxblood;
+      ctx.beginPath();
+      ctx.arc(cx + Math.sin(sweepA)*R*0.68, cy - Math.cos(sweepA)*R*0.68, R*0.02, 0, Math.PI*2);
+      ctx.fill();
+    } else {
+      var ms = reduce ? 0 : d2.getMilliseconds();
+      var sA = ((d2.getSeconds() + ms/1000) / 60) * Math.PI*2;
+      var mA = ((d2.getMinutes() + d2.getSeconds()/60) / 60) * Math.PI*2;
+      var hA = (((d2.getHours() % 12) + d2.getMinutes()/60) / 12) * Math.PI*2;
+      hand(cx, cy, hA, R*0.5, R*0.11, R*0.028, C.steel, C.steelHi);
+      hand(cx, cy, mA, R*0.72, R*0.14, R*0.02, C.steel, C.steelHi);
+      hand(cx, cy, sA, R*0.8, R*0.19, R*0.008, C.oxblood, null);
+    }
+
+    /* center cap */
+    var cg = ctx.createRadialGradient(cx - R*0.01, cy - R*0.01, R*0.004, cx, cy, R*0.035);
+    cg.addColorStop(0, C.bezelLight); cg.addColorStop(1, C.bezelDark);
+    ctx.fillStyle = cg;
+    ctx.beginPath(); ctx.arc(cx, cy, R*0.032, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "rgba(20,14,4,.7)";
+    ctx.beginPath(); ctx.arc(cx, cy, R*0.01, 0, Math.PI*2); ctx.fill();
+
+    /* overlays */
+    if(intervals && run.status === "switching"){
+      ctx.fillStyle = C.alertWash;
+      ctx.beginPath(); ctx.arc(cx, cy, R*0.9, 0, Math.PI*2); ctx.fill();
+      var pulse = reduce ? 1 : (1 + 0.03 * Math.sin(now/170));
+      ctx.fillStyle = C.oxblood;
+      ctx.font = "600 " + (R*0.22*pulse) + "px Fraunces, Georgia, serif";
+      ctx.fillText("SWITCH", cx, cy - R*0.05);
+      var cdn = Math.max(1, Math.ceil((run.switchUntil - now)/1000));
+      ctx.fillStyle = C.sepia;
+      ctx.font = "500 " + (R*0.14) + "px 'IBM Plex Mono', monospace";
+      ctx.fillText(String(cdn), cx, cy + R*0.2);
+    }
+    if(intervals && run.status === "done"){
+      ctx.fillStyle = C.brassSoft;
+      ctx.beginPath(); ctx.arc(cx, cy, R*0.9, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = C.brass;
+      ctx.font = "600 " + (R*0.2) + "px Fraunces, Georgia, serif";
+      ctx.fillText("DONE", cx, cy - R*0.03);
+      ctx.fillStyle = C.sepiaSoft;
+      ctx.font = "500 " + (R*0.055) + "px 'IBM Plex Sans', sans-serif";
+      ctx.fillText(run.rounds + " rounds " + DOT + " " + fmtTotal(run.rounds * run.roundMs/1000), cx, cy + R*0.16);
+    }
+    if(!intervals && alarm.ringing){
+      ctx.fillStyle = C.alertWash;
+      ctx.beginPath(); ctx.arc(cx, cy, R*0.9, 0, Math.PI*2); ctx.fill();
+      var apulse = reduce ? 1 : (1 + 0.035 * Math.sin(now/170));
+      ctx.fillStyle = C.oxblood;
+      ctx.font = "600 " + (R*0.2*apulse) + "px Fraunces, Georgia, serif";
+      ctx.fillText("ALARM", cx, cy - R*0.03);
+      ctx.fillStyle = C.sepia;
+      ctx.font = "500 " + (R*0.06) + "px 'IBM Plex Sans', sans-serif";
+      ctx.fillText(fmtClockTime(alarm.mins), cx, cy + R*0.16);
+    }
+  }
+
+  /* ---------- run loop ---------- */
+  var lastDraw = 0;
+  function tickAlarm(){
+    var t = Date.now();
+    if(alarm.armed && !alarm.ringing && t >= alarm.targetTs){
+      alarm.armed = false;
+      alarm.ringing = true;
+      alarm.nextChime = t;
+      alarm.ringUntil = t + 60000;
+      S.alarmOn = false; save();
+      announce("Alarm. " + fmtClockTime(alarm.mins) + ".");
+      renderAlarm();
+    }
+    if(alarm.ringing){
+      if(t >= alarm.ringUntil){ alarm.ringing = false; renderAlarm(); }
+      else if(t >= alarm.nextChime){ beepDone(); alarm.nextChime = t + 4000; }
+    }
+  }
+
+  function tick(now){
+    tickAlarm();
+    if(S.mode !== "intervals") return;
+
+    if(run.status === "running"){
+      if(now - run.startPerf >= run.roundMs){
+        run.round += 1;
+        if(run.round > run.rounds){
+          run.status = "done";
+          beepDone();
+          announce("Session complete. " + run.rounds + " rounds finished.");
+        } else {
+          run.status = "switching";
+          run.switchUntil = now + SWITCH_MS;
+          run.cd = 0;
+          beepSwitch();
+          announce("Switch now. Round " + run.round + " of " + run.rounds + " starting.");
+        }
+        renderDeck();
+      }
+    } else if(run.status === "switching"){
+      if(now >= run.switchUntil){
+        run.status = "running";
+        run.startPerf = now;
+        renderDeck();
+      } else {
+        var n = Math.ceil((run.switchUntil - now)/1000);
+        if(n !== run.cd){ run.cd = n; updateRunReadouts(now); }
+      }
+    }
+  }
+
+  function frame(now){
+    requestAnimationFrame(frame);
+    tick(now);
+    if(!reduce || now - lastDraw > 200){ draw(now); lastDraw = now; }
+    if(S.mode === "clock") updateClock();
+    else updateRunReadouts(now);
+  }
+  requestAnimationFrame(frame);
+
+  /* ---------- deck rendering ---------- */
+  function show(panel){
+    panelClock.classList.toggle("on", panel === "clock");
+    panelConfig.classList.toggle("on", panel === "config");
+    panelRun.classList.toggle("on", panel === "run");
+  }
+
+  function renderDeck(){
+    if(S.mode === "clock"){
+      show("clock");
+      hintline.textContent = "The dial tracks the current time.";
+      return;
+    }
+    if(run.status === "idle"){
+      show("config");
+      hintline.textContent = "Each round counts up from zero. At the top it beeps, shows SWITCH for 3 seconds, then the next round begins.";
+      return;
+    }
+    show("run");
+    runRound.textContent = "Round " + Math.min(run.round, run.rounds) + " of " + run.rounds;
+    pauseBtn.textContent = (run.status === "paused") ? "Resume" : "Pause";
+    pauseBtn.disabled = (run.status === "switching" || run.status === "done");
+    if(run.status === "done"){
+      runStatus.textContent = "Session complete.";
+      roRemainBox.querySelector(".cap").textContent = "To switch";
+      hintline.textContent = "Nice work. Reset to run it again.";
+    } else if(run.status === "switching"){
+      runStatus.textContent = "Switch now - next round starting";
+      hintline.textContent = "SWITCH sides now.";
+    } else if(run.status === "paused"){
+      runStatus.textContent = "Paused.";
+      hintline.textContent = "Resume when you are ready.";
+    } else {
+      runStatus.textContent = "";
+      hintline.textContent = "Round in progress.";
+    }
+    updateRunReadouts(performance.now());
+  }
+
+  function updateClock(){
+    var d = new Date();
+    var h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
+    var str;
+    if(S.h24){
+      str = (h<10?"0":"")+h + ":" + (m<10?"0":"")+m + ":" + (s<10?"0":"")+s;
+    } else {
+      var ap = h >= 12 ? "PM" : "AM";
+      var hh = h % 12; if(hh === 0) hh = 12;
+      str = hh + ":" + (m<10?"0":"")+m + ":" + (s<10?"0":"")+s + " " + ap;
+    }
+    clkTime.textContent = str;
+    clkDate.textContent = d.toLocaleDateString(undefined, {weekday:"long", month:"long", day:"numeric"});
+  }
+
+  function updateRunReadouts(now){
+    if(S.mode !== "intervals" || run.status === "idle") return;
+    var el = 0;
+    if(run.status === "running") el = now - run.startPerf;
+    else if(run.status === "paused") el = run.pauseAt - run.startPerf;
+    else if(run.status === "switching" || run.status === "done") el = run.roundMs;
+    if(el < 0) el = 0; if(el > run.roundMs) el = run.roundMs;
+    var remain = run.roundMs - el;
+
+    roElapsed.textContent = fmt(el/1000);
+    if(run.status === "switching"){
+      roRemain.textContent = String(Math.max(1, Math.ceil((run.switchUntil - now)/1000)));
+      roRemainBox.querySelector(".cap").textContent = "Switch in";
+      roRemainBox.classList.add("alert");
+    } else if(run.status === "done"){
+      roRemain.textContent = "00:00";
+      roRemainBox.querySelector(".cap").textContent = "To switch";
+      roRemainBox.classList.remove("alert");
+    } else {
+      roRemain.textContent = fmt(Math.ceil(remain/1000));
+      roRemainBox.querySelector(".cap").textContent = "To switch";
+      roRemainBox.classList.remove("alert");
+    }
+    roBar.style.width = (run.roundMs ? (el/run.roundMs*100) : 0) + "%";
+  }
+
+  /* ---------- config validation ---------- */
+  function validateConfig(){
+    var len = parseLen(inLen.value);
+    var rounds = parseRounds(inRounds.value);
+    var ok = (len !== null && rounds !== null);
+    if(len === null && inLen.value.trim() !== ""){
+      cfgError.textContent = "Round length must be M:SS between 0:05 and 99:00.";
+    } else if(rounds === null && inRounds.value.trim() !== ""){
+      cfgError.textContent = "Rounds must be a whole number from 1 to 99.";
+    } else {
+      cfgError.textContent = "";
+    }
+    startBtn.disabled = !ok;
+    if(len !== null && rounds !== null){
+      totalHint.textContent = "Total " + fmtTotal(len * rounds);
+    } else {
+      totalHint.textContent = "Total --:--";
+    }
+    return ok ? { len: len, rounds: rounds } : null;
+  }
+
+  /* ---------- events ---------- */
+  function setMode(mode){
+    S.mode = mode;
+    modeSwitch.setAttribute("aria-checked", mode === "intervals" ? "true" : "false");
+    modeSwitchUI.setAttribute("data-mode", mode);
+    if(mode === "clock" && run.status !== "idle") resetRun();
+    save();
+    renderDeck();
+    draw(performance.now());
+  }
+
+  modeSwitch.addEventListener("click", function(){
+    setMode(S.mode === "clock" ? "intervals" : "clock");
+  });
+
+  fmt12.addEventListener("click", function(){ S.h24 = false; fmt12.setAttribute("aria-pressed","true"); fmt24.setAttribute("aria-pressed","false"); save(); updateClock(); renderAlarm(); });
+  fmt24.addEventListener("click", function(){ S.h24 = true; fmt24.setAttribute("aria-pressed","true"); fmt12.setAttribute("aria-pressed","false"); save(); updateClock(); renderAlarm(); });
+
+  muteBtn.addEventListener("click", function(){
+    S.muted = !S.muted;
+    muteBtn.setAttribute("aria-pressed", S.muted ? "true" : "false");
+    muteBtn.textContent = S.muted ? "Sound off" : "Sound on";
+    save();
+  });
+
+  inLen.addEventListener("input", function(){ S.len = inLen.value; save(); validateConfig(); });
+  inRounds.addEventListener("input", function(){
+    var r = parseRounds(inRounds.value); if(r !== null){ S.rounds = r; save(); }
+    validateConfig();
+  });
+
+  cfg.addEventListener("submit", function(e){
+    e.preventDefault();
+    var v = validateConfig();
+    if(!v) return;
+    ensureAudio();
+    run.status = "running";
+    run.round = 1;
+    run.rounds = v.rounds;
+    run.roundMs = v.len * 1000;
+    run.startPerf = performance.now();
+    run.cd = 0;
+    announce("Session started. Round 1 of " + v.rounds + ".");
+    renderDeck();
+  });
+
+  pauseBtn.addEventListener("click", function(){
+    var now = performance.now();
+    if(run.status === "running"){
+      run.status = "paused"; run.pauseAt = now;
+      announce("Paused.");
+    } else if(run.status === "paused"){
+      run.startPerf += (now - run.pauseAt);
+      run.status = "running";
+      announce("Resumed.");
+    }
+    renderDeck();
+  });
+
+  var aboutBtn = $("aboutBtn"), aboutMsg = $("aboutMsg");
+  aboutMsg.classList.remove("show");
+  aboutBtn.addEventListener("click", function(){
+    var open = aboutMsg.classList.toggle("show");
+    aboutBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+
+  /* ---------- alarm ---------- */
+  function renderAlarm(){
+    if(alarm.ringing){
+      alarmBtn.setAttribute("aria-pressed", "false");
+      alarmBtn.textContent = "Set alarm";
+      alarmStatus.className = "alarm-status ring";
+      alarmStatus.textContent = "Alarm " + DOT + " " + fmtClockTime(alarm.mins);
+      alarmDismiss.classList.add("show");
+      return;
+    }
+    alarmDismiss.classList.remove("show");
+    alarmBtn.setAttribute("aria-pressed", alarm.armed ? "true" : "false");
+    alarmBtn.textContent = alarm.armed ? "Alarm on" : "Set alarm";
+    alarmStatus.className = "alarm-status";
+    alarmStatus.textContent = alarm.armed ? ("Alarm " + DOT + " " + fmtClockTime(alarm.mins)) : "";
+  }
+
+  function armAlarm(){
+    var m = parseAlarm(inAlarm.value);
+    if(m === null){
+      alarm.armed = false; S.alarmOn = false; save();
+      alarmDismiss.classList.remove("show");
+      alarmBtn.setAttribute("aria-pressed", "false");
+      alarmBtn.textContent = "Set alarm";
+      alarmStatus.className = "alarm-status err";
+      alarmStatus.textContent = "Enter a time like 7:30 or 19:30";
+      return;
+    }
+    ensureAudio();
+    alarm.armed = true; alarm.ringing = false;
+    alarm.mins = m;
+    alarm.targetTs = nextOccurrence(m);
+    S.alarm = inAlarm.value.trim(); S.alarmOn = true; save();
+    announce("Alarm set for " + fmtClockTime(m) + ".");
+    renderAlarm();
+  }
+  function disarmAlarm(){
+    alarm.armed = false; S.alarmOn = false; save();
+    announce("Alarm off.");
+    renderAlarm();
+  }
+  function dismissAlarm(){
+    alarm.ringing = false;
+    renderAlarm();
+    draw(performance.now());
+  }
+
+  alarmBtn.addEventListener("click", function(){
+    if(alarm.ringing) return dismissAlarm();
+    if(alarm.armed) disarmAlarm(); else armAlarm();
+  });
+  alarmDismiss.addEventListener("click", dismissAlarm);
+  inAlarm.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); if(!alarm.armed && !alarm.ringing) armAlarm(); }
+  });
+  inAlarm.addEventListener("input", function(){
+    if(alarmStatus.classList.contains("err")){ alarmStatus.className = "alarm-status"; alarmStatus.textContent = ""; }
+  });
+
+  function resetRun(){
+    run.status = "idle"; run.round = 1;
+    renderDeck();
+  }
+  resetBtn.addEventListener("click", function(){
+    resetRun();
+    announce("Session reset.");
+  });
+
+  /* ---------- init ---------- */
+  inLen.value = S.len;
+  inRounds.value = S.rounds;
+  muteBtn.setAttribute("aria-pressed", S.muted ? "true" : "false");
+  muteBtn.textContent = S.muted ? "Sound off" : "Sound on";
+  fmt12.setAttribute("aria-pressed", S.h24 ? "false" : "true");
+  fmt24.setAttribute("aria-pressed", S.h24 ? "true" : "false");
+  modeSwitch.setAttribute("aria-checked", S.mode === "intervals" ? "true" : "false");
+  modeSwitchUI.setAttribute("data-mode", S.mode);
+
+  inAlarm.value = S.alarm;
+  if(S.alarmOn){
+    var m0 = parseAlarm(S.alarm);
+    if(m0 !== null){ alarm.armed = true; alarm.mins = m0; alarm.targetTs = nextOccurrence(m0); }
+    else { S.alarmOn = false; save(); }
+  }
+  renderAlarm();
+
+  validateConfig();
+  renderDeck();
+  updateClock();
+  resize();
+
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){ draw(performance.now()); });
+  }
+})();
+</script>
+</body>
+</html>
